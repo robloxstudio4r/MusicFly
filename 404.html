@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MusicFly</title>
+  <link rel="stylesheet" href="./css/main.css" />
+  <script>
+    // GitHub Pages has no SPA rewrite. We stash the attempted path,
+    // bounce to /, and index.html restores it via history.replaceState.
+    (function () {
+      try {
+        var parts = location.pathname.split("/").filter(Boolean);
+        var repo = parts[0] || "";
+        var rest = "/" + parts.slice(1).join("/");
+        if (!rest || rest === "/") rest = "/";
+        sessionStorage.setItem("mf:redirect", rest + location.search);
+        location.replace("/" + repo + "/");
+      } catch (e) {
+        location.replace("/");
+      }
+    })();
+  </script>
+</head>
+<body>
+  <div id="app"><div id="boot-error" style="padding:2rem;font-family:system-ui"></div></div>
+  <div id="player-root"></div>
+  <div id="modal-root"></div>
+  <div id="toast-root"></div>
+</body>
+</html>
