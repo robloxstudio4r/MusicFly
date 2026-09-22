@@ -1,15 +1,60 @@
-* { box-sizing: border-box; }
-body { margin: 0; font-family: system-ui, sans-serif; background: #0d0d0d; color: #eee; }
-#app { min-height: calc(100vh - 80px); padding: 1rem 2rem 100px; }
-.topbar { display:flex; justify-content:space-between; align-items:center; padding:1rem 0; border-bottom:1px solid #222; }
-.topbar nav a { margin: 0 .75rem; color: #bbb; text-decoration: none; }
-.topbar nav a:hover { color: #1db954; }
-.track-grid { display:grid; grid-template-columns: repeat(auto-fill,minmax(180px,1fr)); gap:1rem; margin-top:1rem; }
-.track-card { background:#181818; border:0; color:#fff; padding:1rem; border-radius:8px; cursor:pointer; text-align:left; display:flex; flex-direction:column; gap:.25rem; }
-.track-card:hover { background:#222; }
-.player-bar { position:fixed; bottom:0; left:0; right:0; height:70px; background:#111; display:flex; align-items:center; gap:1rem; padding:0 1.5rem; border-top:1px solid #222; }
-.player-bar button { background:transparent; border:0; color:#fff; font-size:1.2rem; cursor:pointer; }
-.player-bar input[type=range]{ flex:1; }
-.admin-track { display:flex; gap:1rem; align-items:center; padding:.5rem; border-bottom:1px solid #222; }
-form input, form button { display:block; margin:.5rem 0; padding:.6rem; background:#181818; color:#fff; border:1px solid #333; border-radius:6px; }
-button { cursor:pointer; }
+/* ---- topbar / user menu ---- */
+.topbar { display:flex; justify-content:space-between; align-items:center; gap:1rem; padding:1rem 0; border-bottom:1px solid #222; }
+.topbar .brand { color:#1db954; margin:0; font-size:1.3rem; }
+.topbar nav a { margin:0 .75rem; color:#bbb; text-decoration:none; }
+.topbar nav a:hover { color:#1db954; }
+
+.user-chip { position:relative; cursor:pointer; padding:.4rem .75rem; border:1px solid #333; border-radius:20px; display:flex; gap:.4rem; align-items:center; }
+.user-chip .badges { font-size:.9em; }
+.user-dropdown { position:absolute; top:110%; right:0; background:#111; border:1px solid #222; border-radius:8px; padding:.25rem; min-width:180px; display:none; flex-direction:column; z-index:100; }
+.user-chip .user-dropdown.open { display:flex; }
+.user-dropdown a, .user-dropdown button { padding:.5rem .75rem; color:#eee; text-decoration:none; background:transparent; border:0; text-align:left; border-radius:6px; cursor:pointer; }
+.user-dropdown a:hover, .user-dropdown button:hover { background:#181818; }
+
+/* ---- hero + sections ---- */
+.hero { padding:2rem 0 1rem; }
+.hero h2 { margin:0 0 .25rem; font-size:1.8rem; }
+.hero p { color:#888; margin:0; }
+.section { margin-top:2rem; }
+.section h3 { margin:0 0 .75rem; font-size:1.1rem; color:#ccc; }
+
+/* ---- track grid ---- */
+.track-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:1rem; }
+.track-card { background:#141414; border-radius:8px; overflow:hidden; cursor:pointer; transition:background .15s; }
+.track-card:hover { background:#1d1d1d; }
+.track-card .cover { aspect-ratio:1; background:#222 center/cover no-repeat; position:relative; }
+.track-card .cover .play-overlay { position:absolute; inset:0; margin:auto; width:56px; height:56px; border-radius:50%; background:#1db954; color:#000; font-size:1.4rem; border:0; cursor:pointer; opacity:0; transition:opacity .15s; }
+.track-card:hover .cover .play-overlay { opacity:1; }
+.track-card .meta { padding:.6rem .75rem; display:flex; flex-direction:column; gap:.15rem; }
+.track-card .title { color:#fff; font-size:.95rem; }
+.track-card .artist { color:#999; font-size:.82rem; }
+
+/* ---- playlists ---- */
+.playlist-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(160px,1fr)); gap:1rem; }
+.playlist-card { background:#141414; border:1px solid #222; padding:1rem; border-radius:8px; color:#eee; text-decoration:none; text-align:left; cursor:pointer; }
+.playlist-card:hover { background:#1d1d1d; }
+.playlist-card.new { border-style:dashed; color:#1db954; }
+
+/* ---- ads ---- */
+.ad-slot-wrap { margin:1rem 0; }
+.ad-slot { display:block; border-radius:8px; overflow:hidden; }
+.ad-slot img { width:100%; max-height:180px; object-fit:cover; display:block; }
+
+/* ---- admin ---- */
+.admin-section { margin:2rem 0; }
+.section-head { display:flex; justify-content:space-between; align-items:center; gap:1rem; }
+.section-head input { flex:1; max-width:340px; padding:.5rem; background:#181818; color:#fff; border:1px solid #333; border-radius:6px; }
+#users-table { width:100%; border-collapse:collapse; margin-top:.75rem; }
+#users-table th, #users-table td { padding:.5rem; border-bottom:1px solid #222; text-align:left; font-size:.9rem; }
+#users-table select { background:#181818; color:#fff; border:1px solid #333; border-radius:4px; padding:.25rem; }
+.admin-track { display:flex; gap:1rem; align-items:center; padding:.6rem .5rem; border-bottom:1px solid #1a1a1a; }
+.admin-track .t-title { font-weight:600; min-width:140px; }
+.admin-track .t-artist, .admin-track .t-genre { color:#999; min-width:100px; }
+.status { margin-top:.5rem; font-size:.85rem; min-height:1.1em; }
+.btn, .actions button, .admin-track button { padding:.35rem .7rem; background:#1db954; color:#000; border:0; border-radius:5px; cursor:pointer; font-size:.82rem; }
+.actions button.danger, .admin-track button.danger { background:#b33; color:#fff; }
+.actions button + button { margin-left:.35rem; }
+
+/* ---- misc ---- */
+.loader { padding:1rem; color:#888; }
+.error  { color:#f55; white-space:pre-wrap; }
