@@ -1,0 +1,15 @@
+* { box-sizing: border-box; }
+body { margin: 0; font-family: system-ui, sans-serif; background: #0d0d0d; color: #eee; }
+#app { min-height: calc(100vh - 80px); padding: 1rem 2rem 100px; }
+.topbar { display:flex; justify-content:space-between; align-items:center; padding:1rem 0; border-bottom:1px solid #222; }
+.topbar nav a { margin: 0 .75rem; color: #bbb; text-decoration: none; }
+.topbar nav a:hover { color: #1db954; }
+.track-grid { display:grid; grid-template-columns: repeat(auto-fill,minmax(180px,1fr)); gap:1rem; margin-top:1rem; }
+.track-card { background:#181818; border:0; color:#fff; padding:1rem; border-radius:8px; cursor:pointer; text-align:left; display:flex; flex-direction:column; gap:.25rem; }
+.track-card:hover { background:#222; }
+.player-bar { position:fixed; bottom:0; left:0; right:0; height:70px; background:#111; display:flex; align-items:center; gap:1rem; padding:0 1.5rem; border-top:1px solid #222; }
+.player-bar button { background:transparent; border:0; color:#fff; font-size:1.2rem; cursor:pointer; }
+.player-bar input[type=range]{ flex:1; }
+.admin-track { display:flex; gap:1rem; align-items:center; padding:.5rem; border-bottom:1px solid #222; }
+form input, form button { display:block; margin:.5rem 0; padding:.6rem; background:#181818; color:#fff; border:1px solid #333; border-radius:6px; }
+button { cursor:pointer; }
