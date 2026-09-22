@@ -2,7 +2,7 @@ import { supabase } from "../supabase.js";
 import {
   currentUser, currentProfile,
   isAdmin, isCreator, isPremium,
-  signOut, onAuthChange,
+  onAuthChange,
 } from "../auth.js";
 import { playTrack } from "../player.js";
 
@@ -15,117 +15,115 @@ export async function render() {
   el.className = "page home";
 
   el.innerHTML = `
-    <header class="topbar">
-      <h1 class="brand">MusicFly</h1>
-      <nav>
-        <a href="/" data-link>Home</a>
-        <a href="/search" data-link>Search</a>
-        <a href="/library" data-link>Library</a>
-        <a href="/premium" data-link>Premium</a>
-      </nav>
-      <div class="user-menu" id="user-menu"></div>
-    </header>
-
     <section class="hero">
-      <h2>Discover music</h2>
-      <p>Fresh tracks from MusicFly creators.</p>
+      <h2 id="greeting">Good ${greeting()}</h2>
+      <p>Here's what's fresh on MusicFly today.</p>
     </section>
+
+    <section class="quick-tiles" id="quick-tiles"></section>
 
     <section id="ad-slot" class="ad-slot-wrap"></section>
 
     <section class="section">
-      <h3>Latest uploads</h3>
+      <h3>
+        <span>Latest uploads</span>
+        <a href="/search" data-link class="muted">See all →</a>
+      </h3>
       <div id="track-grid" class="track-grid"></div>
     </section>
 
     <section class="section" id="liked-section" style="display:none">
-      <h3>Liked by you</h3>
+      <h3>
+        <span>Liked by you</span>
+        <a href="/library" data-link class="muted">Open library →</a>
+      </h3>
       <div id="liked-grid" class="track-grid"></div>
     </section>
 
     <section class="section" id="playlist-section" style="display:none">
-      <h3>Your playlists</h3>
+      <h3>
+        <span>Your playlists</span>
+        <a href="/library" data-link class="muted">Manage →</a>
+      </h3>
       <div id="playlist-grid" class="playlist-grid"></div>
     </section>
   `;
 
-  renderUserMenu(el);
+  renderGreeting(el);
+  renderQuickTiles(el);
 
-  // Re-render user menu if auth state changes while on this page
-  const off = onAuthChange(() => renderUserMenu(el));
+  // Re-render user-specific bits if auth changes while on this page
+  const off = onAuthChange(() => {
+    renderGreeting(el);
+    renderQuickTiles(el);
+    if (currentUser) {
+      loadLiked(el);
+      loadPlaylists(el);
+    }
+  });
   el._cleanup = off;
 
-  // Load everything in parallel
+  // Load in parallel
   await Promise.all([
     loadTracks(el),
     loadAds(el),
-    currentUser ? loadLiked(el)    : Promise.resolve(),
-    currentUser ? loadPlaylists(el): Promise.resolve(),
+    currentUser ? loadLiked(el)     : Promise.resolve(),
+    currentUser ? loadPlaylists(el) : Promise.resolve(),
   ]);
 
   return el;
 }
 
 /* ============================================================
-   USER MENU
+   GREETING
    ============================================================ */
 
-function renderUserMenu(el) {
-  const box = el.querySelector("#user-menu");
-  if (!box) return;
-  box.innerHTML = "";
+function greeting() {
+  const h = new Date().getHours();
+  return h < 12 ? "morning" : h < 18 ? "afternoon" : "evening";
+}
 
-  if (!currentUser) {
+function renderGreeting(el) {
+  const h2 = el.querySelector("#greeting");
+  if (!h2) return;
+  const name = currentProfile?.username || currentUser?.email?.split("@")[0];
+  h2.textContent = name
+    ? `Good ${greeting()}, ${name}`
+    : `Good ${greeting()}`;
+}
+
+/* ============================================================
+   QUICK TILES  (Spotify-style "recently played" row)
+   ============================================================ */
+
+function renderQuickTiles(el) {
+  const wrap = el.querySelector("#quick-tiles");
+  if (!wrap) return;
+
+  const tiles = [
+    { href: "/search",   label: "Search music",  color: "#1db954", icon: "🔎" },
+    { href: "/library",  label: "Your library",  color: "#7a5cff", icon: "♫"  },
+    { href: "/premium",  label: "Go Premium",    color: "#ffb800", icon: "★"  },
+  ];
+
+  if (isCreator()) tiles.push({ href: "/creator",   label: "Creator Studio",   color: "#ff5c7a", icon: "🎙" });
+  if (isPremium()) tiles.push({ href: "/developer", label: "Developer Portal", color: "#22c1c3", icon: "⌘"  });
+  if (isAdmin())   tiles.push({ href: "/admin",     label: "Admin Panel",      color: "#e54545", icon: "🛡" });
+
+  wrap.innerHTML = "";
+  tiles.forEach((t) => {
     const a = document.createElement("a");
-    a.href = "/login";
+    a.href = t.href;
     a.dataset.link = "";
-    a.className = "btn";
-    a.textContent = "Log in";
-    box.appendChild(a);
-    return;
-  }
-
-  // profile chip
-  const chip = document.createElement("div");
-  chip.className = "user-chip";
-  const name = currentProfile?.username ?? currentUser.email ?? "User";
-  const badges = [];
-  if (currentProfile?.verified) badges.push("✅");
-  if (isPremium()) badges.push("★");
-  if (isAdmin())   badges.push("🛡");
-  else if (isCreator()) badges.push("🎵");
-
-  chip.innerHTML = `<span class="name">${escapeHtml(name)}</span>
-    <span class="badges">${badges.join(" ")}</span>`;
-  box.appendChild(chip);
-
-  // dropdown
-  const menu = document.createElement("div");
-  menu.className = "user-dropdown";
-  const links = [];
-  if (isCreator()) links.push({ href: "/creator",   label: "Creator Studio" });
-  if (isPremium()) links.push({ href: "/developer", label: "Developer Portal" });
-  if (isAdmin())   links.push({ href: "/admin",     label: "Admin Panel" });
-  links.push({ href: "/library", label: "Library" });
-
-  links.forEach(({ href, label }) => {
-    const a = document.createElement("a");
-    a.href = href;
-    a.dataset.link = "";
-    a.textContent = label;
-    menu.appendChild(a);
+    a.className = "quick-tile";
+    a.style.setProperty("--tile-color", t.color);
+    a.innerHTML = `
+      <span class="tile-ico">${t.icon}</span>
+      <span class="tile-label">${escapeHtml(t.label)}</span>
+      <span class="tile-arrow">→</span>
+    `;
+    wrap.appendChild(a);
   });
-
-  const logout = document.createElement("button");
-  logout.textContent = "Log out";
-  logout.onclick = async () => {
-    await signOut();
-    location.reload();
-  };
-  menu.appendChild(logout);
-
-  chip.onclick = () => menu.classList.toggle("open");
-  chip.appendChild(menu);
 }
 
 /* ============================================================
@@ -134,7 +132,8 @@ function renderUserMenu(el) {
 
 async function loadTracks(el) {
   const grid = el.querySelector("#track-grid");
-  grid.innerHTML = `<div class="loader">Loading…</div>`;
+  if (!grid) return;
+  grid.innerHTML = skeletonGrid(6);
 
   const { data, error } = await supabase
     .from("tracks")
@@ -150,19 +149,34 @@ async function loadTracks(el) {
 
   grid.innerHTML = "";
   if (!data?.length) {
-    grid.innerHTML = "<p>No tracks yet. Be the first to upload!</p>";
+    grid.innerHTML = `<div class="empty-state">
+      <h2>No tracks yet</h2>
+      <p>Be the first to upload on MusicFly.</p>
+      ${isCreator()
+        ? `<a class="btn primary" href="/creator" data-link>Open Creator Studio</a>`
+        : ""}
+    </div>`;
     return;
   }
 
   data.forEach((t) => grid.appendChild(trackCard(t, data)));
 }
 
+/* ============================================================
+   TRACK CARD
+   ============================================================ */
+
 function trackCard(track, list) {
   const card = document.createElement("div");
   card.className = "track-card";
+
+  const cover = track.cover_path
+    ? `style="background-image:url('${publicUrl("covers", track.cover_path)}')"`
+    : "";
+
   card.innerHTML = `
-    <div class="cover" ${track.cover_path ? `style="background-image:url('${publicUrl("covers", track.cover_path)}')"` : ""}>
-      <button class="play-overlay">▶</button>
+    <div class="cover" ${cover}>
+      <button class="play-overlay" title="Play" aria-label="Play">▶</button>
     </div>
     <div class="meta">
       <strong class="title">${escapeHtml(track.title)}</strong>
@@ -176,16 +190,9 @@ function trackCard(track, list) {
     e.stopPropagation();
     playTrack(track, list);
   };
-
-  // double-click plays too
   card.ondblclick = () => playTrack(track, list);
 
   return card;
-}
-
-function publicUrl(bucket, path) {
-  const { data } = supabase.storage.from(bucket).getPublicUrl(path);
-  return data.publicUrl;
 }
 
 /* ============================================================
@@ -195,6 +202,7 @@ function publicUrl(bucket, path) {
 async function loadLiked(el) {
   const section = el.querySelector("#liked-section");
   const grid = el.querySelector("#liked-grid");
+  if (!section || !grid || !currentUser) return;
 
   const { data, error } = await supabase
     .from("likes")
@@ -203,12 +211,19 @@ async function loadLiked(el) {
     .order("created_at", { ascending: false })
     .limit(12);
 
-  if (error || !data?.length) return; // silently hide
+  if (error || !data?.length) {
+    section.style.display = "none";
+    return;
+  }
 
-  const tracks = data.map((row) => row.tracks).filter(Boolean);
-  if (!tracks.length) return;
+  const tracks = data.map((r) => r.tracks).filter(Boolean);
+  if (!tracks.length) {
+    section.style.display = "none";
+    return;
+  }
 
   section.style.display = "";
+  grid.innerHTML = "";
   tracks.forEach((t) => grid.appendChild(trackCard(t, tracks)));
 }
 
@@ -219,6 +234,7 @@ async function loadLiked(el) {
 async function loadPlaylists(el) {
   const section = el.querySelector("#playlist-section");
   const grid = el.querySelector("#playlist-grid");
+  if (!section || !grid || !currentUser) return;
 
   const { data, error } = await supabase
     .from("playlists")
@@ -227,33 +243,39 @@ async function loadPlaylists(el) {
     .order("created_at", { ascending: false })
     .limit(12);
 
-  if (error || !data?.length) return;
+  if (error) {
+    section.style.display = "none";
+    return;
+  }
 
   section.style.display = "";
   grid.innerHTML = "";
 
-  // "create new" card
+  // "+ New playlist" tile
   const newCard = document.createElement("button");
+  newCard.type = "button";
   newCard.className = "playlist-card new";
-  newCard.textContent = "+ New playlist";
+  newCard.innerHTML = `<span>＋ New playlist</span>`;
   newCard.onclick = async () => {
     const name = prompt("Playlist name:");
     if (!name) return;
-    const { error } = await supabase.from("playlists").insert({
+    const { error: insErr } = await supabase.from("playlists").insert({
       owner_id: currentUser.id,
       name,
     });
-    if (error) return alert(error.message);
+    if (insErr) return alert(insErr.message);
     loadPlaylists(el);
   };
   grid.appendChild(newCard);
 
+  if (!data?.length) return;
+
   data.forEach((p) => {
     const card = document.createElement("a");
-    card.className = "playlist-card";
     card.href = `/playlist?id=${p.id}`;
     card.dataset.link = "";
-    card.textContent = p.name;
+    card.className = "playlist-card";
+    card.innerHTML = `<span class="pl-name">${escapeHtml(p.name)}</span>`;
     grid.appendChild(card);
   });
 }
@@ -264,12 +286,18 @@ async function loadPlaylists(el) {
 
 async function loadAds(el) {
   const wrap = el.querySelector("#ad-slot");
+  if (!wrap) return;
+
   const { data, error } = await supabase
-    .from("ads").select("*")
+    .from("ads")
+    .select("*")
     .eq("active", true)
     .limit(1);
 
-  if (error || !data?.length) return;
+  if (error || !data?.length) {
+    wrap.style.display = "none";
+    return;
+  }
 
   const ad = data[0];
   const link = document.createElement("a");
@@ -283,13 +311,32 @@ async function loadAds(el) {
   };
   wrap.appendChild(link);
 
-  // count impression (ignore failure)
   supabase.rpc("bump_ad_impression", { ad_id: ad.id }).catch(() => {});
 }
 
 /* ============================================================
    UTIL
    ============================================================ */
+
+function publicUrl(bucket, path) {
+  const { data } = supabase.storage.from(bucket).getPublicUrl(path);
+  return data.publicUrl;
+}
+
+function skeletonGrid(n) {
+  return Array.from({ length: n })
+    .map(
+      () => `
+        <div class="track-card skeleton">
+          <div class="cover"></div>
+          <div class="meta">
+            <div class="sk-line w70"></div>
+            <div class="sk-line w40"></div>
+          </div>
+        </div>`
+    )
+    .join("");
+}
 
 function escapeHtml(s) {
   return String(s ?? "")
